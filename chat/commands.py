@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from collections import namedtuple
 
 from . import helpers
@@ -11,7 +12,7 @@ command_registry = dict()
 
 def handle_command(command_name: str, context: CommandContext) -> None:
     if command_name not in command_registry:
-        context.handler.send(f"Unknown command: {command_name}")
+        context.current_handler.send(f"Unknown command: {command_name}")
         return
 
     command_registry[command_name](context)
