@@ -19,7 +19,7 @@ def handle_command(command_name: str, context: CommandContext) -> None:
 
 def command(command_name):
     """
-    A decorator to mark functions as command handlers and registry
+    A decorator to mark functions as command handlers and register
     them in the registry.
     """
     def wrapper(func):
