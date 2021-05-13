@@ -5,7 +5,7 @@ import socket
 import threading
 from typing import Optional
 
-from . import helpers, worker
+from . import commands, helpers, worker
 
 logger = logging.getLogger(__name__)
 job_manager: worker.JobManager = None
@@ -63,106 +63,11 @@ class ClientHandler:
 
     def _handle_request(self, data: bytes) -> None:
         data = data.decode("utf-8").strip()
-        command, _, params = data.partition(" ")
-        command = command.lower()
+        command_name, _, message = data.partition(" ")
+        command_name = command_name.lower()
 
-        if command not in {"w", "msg", "broadcast", "url", "fib"}:
-            self.send(f"Invalid command: {command}")
-
-        if command == "broadcast":
-            self.handle_broadcast(params)
-
-        if command == "w":
-            self.handle_whois()
-
-        if command == "msg":
-            self.handle_msg(params)
-
-        if command == "fib":
-            self.handle_fib(params)
-
-        if command == "url":
-            self.handle_url(params)
-
-    def handle_whois(self):
-        users = [h.username for h in registry.all() if h != self]
-        if users:
-            message = "Online users: " + ", ".join(users)
-        else:
-            message = "No other user is connected."
-
-        self.send(message)
-
-    def handle_url(self, params):
-        params_splitted = params.split(" ")
-        if len(params_splitted) != 2:
-            self.send("Invalid url paramenters.")
-
-        other_user, url = params_splitted
-        handler = registry.find(other_user)
-        if not handler:
-            self.send(f"User not found: {other_user}")
-            return
-
-        def callback(result, handler):
-            if handler.send(f"resource_size({url}) = {result}"):
-                self.send(f"URL size is delivered to {handler.username}")
-            else:
-                self.send(f"Cannot deliver url size to {handler.username}")
-
-        job_manager.enqueue_job(
-            job_func=helpers.get_remote_resource_length,
-            job_func_kwargs={"url": url},
-            callback_func=callback,
-            callback_func_kwargs={"handler": handler},
-        )
-
-    def handle_fib(self, params) -> None:
-        params_splitted = params.split(" ")
-        if len(params_splitted) != 2:
-            self.send("Invalid fib paramenters.")
-
-        other_user, number = params_splitted
-        handler = registry.find(other_user)
-        if not handler:
-            self.send(f"User not found: {other_user}")
-            return
-
-        number = int(number)
-
-        def callback(result, handler):
-            if handler.send(f"fib({number}) = {result}"):
-                self.send(f"Fib result is delivered to {handler.username}")
-            else:
-                self.send(f"Cannot deliver fib result to {handler.username}")
-
-        job_manager.enqueue_job(
-            job_func=helpers.fibonacci,
-            job_func_kwargs={"n": number},
-            callback_func=callback,
-            callback_func_kwargs={"handler": handler},
-        )
-
-    def handle_msg(self, message: str) -> None:
-        other_user, _, message = message.partition(" ")
-        handler = registry.find(other_user)
-        if not handler:
-            self.send(f"User not found: {other_user}")
-
-        if handler.send(message, sender=self.username):
-            self.send(f"Message is delivered to {handler.username}")
-        else:
-            self.send(f"Cannot deliver the message to {handler.username}")
-
-    def handle_broadcast(self, message: str) -> None:
-        for other_handler in registry.all():
-            if other_handler == self:
-                continue
-
-            try:
-                other_handler.send(message, sender=self.username)
-            except Exception:
-                pass
+        context = commands.CommandContext(message, self, registry, job_manager)
+        commands.handle_command(command_name, context)
 
     def send(self, message: str, *, sender: str = None) -> bool:
         # Check to see if socket is already closed
