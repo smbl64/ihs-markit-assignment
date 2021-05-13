@@ -60,6 +60,7 @@ class ClientHandler:
         while True:
             data = self.connection.recv(1024)
             if len(data) == 0:
+                self.connection.close()
                 self.unregister_handler()
                 break
 
@@ -91,7 +92,7 @@ class ClientHandler:
     def handle_whois(self):
         users = [h.username for h in registry.all() if h != self]
         if users:
-            message = "List of users: " + ", ".join(users)
+            message = "Online users: " + ", ".join(users)
         else:
             message = "No other user is connected."
 
@@ -109,7 +110,10 @@ class ClientHandler:
             return
 
         def callback(result, handler):
-            handler.send(f"resource_size({url}) = {result}")
+            if handler.send(f"resource_size({url}) = {result}"):
+                self.send(f"URL size is delivered to {handler.username}")
+            else:
+                self.send(f"Cannot deliver url size to {handler.username}")
 
         job_manager.enqueue_job(
             job_func=helpers.get_remote_resource_length,
@@ -132,7 +136,10 @@ class ClientHandler:
         number = int(number)
 
         def callback(result, handler):
-            handler.send(f"fib({number}) = {result}")
+            if handler.send(f"fib({number}) = {result}"):
+                self.send(f"Fib result is delivered to {handler.username}")
+            else:
+                self.send(f"Cannot deliver fib result to {handler.username}")
 
         job_manager.enqueue_job(
             job_func=helpers.fibonacci,
@@ -147,7 +154,10 @@ class ClientHandler:
         if not handler:
             self.send(f"User not found: {other_user}")
 
-        handler.send(message, sender=self.username)
+        if handler.send(message, sender=self.username):
+            self.send(f"Message is delivered to {handler.username}")
+        else:
+            self.send(f"Cannot deliver the message to {handler.username}")
 
     def handle_broadcast(self, message: str) -> None:
         for other_handler in registry.all():
@@ -159,7 +169,11 @@ class ClientHandler:
             except Exception:
                 pass
 
-    def send(self, message: str, *, sender: str = None) -> None:
+    def send(self, message: str, *, sender: str = None) -> bool:
+        # Check to see if socket is already closed
+        if self.connection.fileno() < 0:
+            return False
+
         now = datetime.datetime.now()
         timestamp = now.strftime("%Y%m%d %H:%M:%S.%f")
 
@@ -171,7 +185,7 @@ class ClientHandler:
         if not message.endswith("\n"):
             message += "\n"
 
-        self.connection.sendall(message.encode("utf-8"))
+        return self.connection.send(message.encode("utf-8")) > 0
 
 
 def get_next_username() -> str:
