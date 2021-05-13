@@ -18,6 +18,48 @@ logger = logging.getLogger(__name__)
 job_manager: worker.JobManager = None
 
 
+class ServerCommandContext(commands.CommandContext):
+    def __init__(self, message, current_handler, handlers_registry, job_manager):
+        self.message = message
+        self.current_handler = current_handler
+        self.handlers_registry = handlers_registry
+        self.job_manager = job_manager
+
+    def get_message(self):
+        return self.message
+
+    def get_all_usernames(self):
+        return [h.username for h in self.handlers_registry.all()]
+
+    def get_current_username(self):
+        return self.current_handler.username
+
+    def send_message(self, message: str) -> bool:
+        return self.current_handler.send(message)
+
+    def send_message_to_other_user(
+        self, receipient: str, message: str, *, sender: str = None
+    ) -> bool:
+        handler = self.handlers_registry.find(receipient)
+        if not handler:
+            return False
+
+        return handler.send(message, sender=sender)
+
+    def is_user_online(self, username: str) -> bool:
+        return self.handlers_registry.find(username) is not None
+
+    def run_in_background(
+        self, *, job_func, job_func_kwargs, callback_func, callback_func_kwargs
+    ) -> None:
+        self.job_manager.enqueue_job(
+            job_func=job_func,
+            job_func_kwargs=job_func_kwargs,
+            callback_func=callback_func,
+            callback_func_kwargs=callback_func_kwargs,
+        )
+
+
 class HandlerRegistry:
     """
     A class which keeps track of online users and their handler classes.
@@ -74,7 +116,7 @@ class ClientHandler:
         command_name, _, message = data.partition(" ")
         command_name = command_name.lower()
 
-        context = commands.CommandContext(message, self, registry, job_manager)
+        context = ServerCommandContext(message, self, registry, job_manager)
         commands.handle_command(command_name, context)
 
     def send(self, message: str, *, sender: str = None) -> bool:
