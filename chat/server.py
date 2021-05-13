@@ -12,26 +12,26 @@ job_manager: worker.JobManager = None
 
 
 class HandlerRegistry:
+    """
+    A class which keeps track of online users and their handler classes.
+    """
     def __init__(self):
-        self._handlers = []
+        self._handlers = dict()
         self._lock = threading.Lock()
 
     def register(self, handler):
         with self._lock:
-            self._handlers.append(handler)
+            self._handlers[handler.username] = handler
 
     def unregister(self, handler):
         with self._lock:
-            self._handlers.remove(handler)
+            self._handlers.pop(handler.username)
 
     def find(self, username: str) -> Optional["ClientHandler"]:
-        for handler in self._handlers:
-            if handler.username == username:
-                return handler
-        return None
+        return self._handlers.get(username, None)
 
     def all(self):
-        return self._handlers
+        return self._handlers.values()
 
 
 registry = HandlerRegistry()
@@ -43,16 +43,10 @@ class ClientHandler:
         self.username = username
 
     def start(self):
-        self.register_handler()
+        registry.register(self)
         thread = threading.Thread(target=self._loop, args=())
         thread.daemon = True
         thread.start()
-
-    def register_handler(self) -> None:
-        registry.register(self)
-
-    def unregister_handler(self) -> None:
-        registry.unregister(self)
 
     def _loop(self):
         self.send(f"Welcome! Your username is {self.username}")
@@ -61,6 +55,7 @@ class ClientHandler:
             data = self.connection.recv(1024)
             if len(data) == 0:
                 self.connection.close()
+                registry.unregister(self)
                 self.unregister_handler()
                 break
 
