@@ -7,8 +7,14 @@ from typing import Optional
 
 from . import commands, worker
 
+# A list of user ids for generating unique usernames.
+# This list is finite, but I've chosen this approach for
+# ease of testing. In production environment, a UUID or
+# a timestamp should be used.
 all_user_ids = queue.deque(range(1000, 10000))
+
 logger = logging.getLogger(__name__)
+
 job_manager: worker.JobManager = None
 
 
