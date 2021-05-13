@@ -1,0 +1,6 @@
+black
+black-macchiato
+flake8
+flake8-isort
+ipython
+pytest
