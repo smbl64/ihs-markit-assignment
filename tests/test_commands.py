@@ -1,7 +1,10 @@
-from chat import commands
+from chat import commands, helpers
 
 
 class MockContext(commands.CommandContext):
+    """
+    A command context which simulates the real server's actions.
+    """
     def __init__(self, *, message, current_username, all_usernames):
         self.message = message
         self.current_username = current_username
@@ -37,7 +40,22 @@ class MockContext(commands.CommandContext):
     def run_in_background(
         self, *, job_func, job_func_kwargs, callback_func, callback_func_kwargs
     ) -> None:
-        pass
+        if not job_func_kwargs:
+            job_func_kwargs = dict()
+
+        if not callback_func_kwargs:
+            callback_func_kwargs = dict()
+
+        ret_value = job_func(**job_func_kwargs)
+        callback_func(ret_value, **callback_func_kwargs)
+
+
+def test_unknown_command():
+    context = MockContext(
+        message="u3 Hey there", current_username="u1", all_usernames=["u1", "u2", "u3"]
+    )
+    commands.handle_command("bar", context)
+    assert context.messages_sent["u1"] == ["Unknown command: bar"]
 
 
 def test_whois_command():
@@ -69,9 +87,26 @@ def test_msg_command():
     assert context.messages_sent["u3"] == ["Hey there"]
 
 
-def test_unknown_command():
+def test_url_command(monkeypatch):
     context = MockContext(
-        message="u3 Hey there", current_username="u1", all_usernames=["u1", "u2", "u3"]
+        message="u2 https://www.google.com",
+        current_username="u1",
+        all_usernames=["u1", "u2"],
     )
-    commands.handle_command("bar", context)
-    assert context.messages_sent["u1"] == ["Unknown command: bar"]
+
+    def mockreturn(*args, **kwargs):
+        return 123
+
+    monkeypatch.setattr(helpers, "get_remote_resource_length", mockreturn)
+    commands.url_command(context)
+    assert context.messages_sent["u1"] == ["URL size is delivered to u2"]
+    assert context.messages_sent["u2"] == ["resource_size(https://www.google.com) = 123"]
+
+
+def test_fib_command():
+    context = MockContext(
+        message="u2 5", current_username="u1", all_usernames=["u1", "u2"]
+    )
+    commands.fib_command(context)
+    assert context.messages_sent["u1"] == ["Fib result is delivered to u2"]
+    assert context.messages_sent["u2"] == ["fib(5) = 5"]

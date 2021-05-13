@@ -181,7 +181,7 @@ def fib_command(context: CommandContext):
         else:
             context.send_message(f"Cannot deliver fib result to {other_user}")
 
-    context.job_manager.enqueue_job(
+    context.run_in_background(
         job_func=helpers.fibonacci,
         job_func_kwargs={"n": number},
         callback_func=callback,
