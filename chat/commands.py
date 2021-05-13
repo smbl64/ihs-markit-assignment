@@ -11,8 +11,8 @@ command_registry = dict()
 
 def handle_command(command_name: str, context: CommandContext) -> None:
     if command_name not in command_registry:
-        # TODO
-        pass
+        context.handler.send(f"Unknown command: {command_name}")
+        return
 
     command_registry[command_name](context)
 
