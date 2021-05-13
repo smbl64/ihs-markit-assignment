@@ -10,7 +10,6 @@ class JobWorker:
     Encapsulate a multiprocessing process.
     """
     def __init__(self, job_queue, result_queue):
-        self._logger = logging.getLogger(f"Worker-{os.getpid()}")
         self._job_queue = job_queue
         self._result_queue = result_queue
 
@@ -19,17 +18,25 @@ class JobWorker:
         p.start()
 
     def _process_entry(self):
+        self._logger = logging.getLogger(f"Worker-{os.getpid()}")
         while True:
             job = self._job_queue.get()
-            self._logger.debug("Got job %s", job["id"])
             self._handle_job(job)
 
     def _handle_job(self, job):
+        job_id = job["id"]
         func = job["func"]
         kwargs = job["kwargs"]
-        ret_value = func(**kwargs)
+        self._logger.debug("Got job %s. func=%s, kwargs=%s", job_id, func, kwargs)
+        try:
+            ret_value = func(**kwargs)
+            self._logger.debug("Finished running the job %s", job_id)
+        except Exception:
+            self._logger.exception("Failed to run the job", job_id)
+            return
+
         job_result = dict(
-            worker_pid=os.getpid(), job_id=job["id"], return_value=ret_value
+            worker_pid=os.getpid(), job_id=job_id, return_value=ret_value
         )
         self._result_queue.put(job_result)
 
