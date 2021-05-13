@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import random
 import socket
@@ -8,6 +9,7 @@ from typing import Optional
 
 from . import helpers, worker
 
+logger = logging.getLogger(__name__)
 job_manager: worker.JobManager = None
 list_of_handlers = []
 
@@ -105,10 +107,19 @@ class ClientHandler:
         handler = self._find_handler(other_user)
         if not handler:
             self.send(f"User not found: {other_user}")
+            return
 
         number = int(number)
-        result = helpers.fibonacci(number)
-        handler.send(f"fib({number}) = {result}")
+
+        def callback(result, handler):
+            handler.send(f"fib({number}) = {result}")
+
+        job_manager.enqueue_job(
+            job_func=helpers.fibonacci,
+            job_func_kwargs={"n": number},
+            callback_func=callback,
+            callback_func_kwargs={"handler": handler},
+        )
 
     def handle_msg(self, message: str) -> None:
         other_user, _, message = message.partition(" ")
@@ -153,15 +164,18 @@ def start():
 
     ip = "127.0.0.1"
     port = 12345
+    logger.info("Binding to %s:%d", ip, port)
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((ip, port))
     server.listen(200)
 
+    logger.info("Server started")
+
     while True:
         conn, addr = server.accept()
         username = get_next_username()
-        print(f"{username} connected")
+        logger.info("%s connected", username)
 
         handler = ClientHandler(conn, username)
         handler.start()
