@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from collections import namedtuple
 
 from . import helpers
@@ -23,6 +22,7 @@ def command(command_name):
     A decorator to mark functions as command handlers and register
     them in the registry.
     """
+
     def wrapper(func):
         command_registry[command_name] = func
 
@@ -56,7 +56,9 @@ def msg_command(context: CommandContext):
     if handler.send(message, sender=context.current_handler.username):
         context.current_handler.send(f"Message is delivered to {handler.username}")
     else:
-        context.current_handler.send(f"Cannot deliver the message to {handler.username}")
+        context.current_handler.send(
+            f"Cannot deliver the message to {handler.username}"
+        )
 
 
 @command("broadcast")

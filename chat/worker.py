@@ -9,6 +9,7 @@ class JobWorker:
     """
     Encapsulate a multiprocessing process.
     """
+
     def __init__(self, job_queue, result_queue):
         self._job_queue = job_queue
         self._result_queue = result_queue
@@ -35,9 +36,7 @@ class JobWorker:
             self._logger.exception("Failed to run the job", job_id)
             return
 
-        job_result = dict(
-            worker_pid=os.getpid(), job_id=job_id, return_value=ret_value
-        )
+        job_result = dict(worker_pid=os.getpid(), job_id=job_id, return_value=ret_value)
         self._result_queue.put(job_result)
 
 
@@ -93,6 +92,6 @@ class JobManager:
         }
         self._job_id_to_callback_map[job_id] = {
             "func": callback_func,
-            "kwargs": callback_func_kwargs
+            "kwargs": callback_func_kwargs,
         }
         self._job_queue.put(job_description)

@@ -22,6 +22,7 @@ class HandlerRegistry:
     """
     A class which keeps track of online users and their handler classes.
     """
+
     def __init__(self):
         self._handlers = dict()
         self._lock = threading.Lock()
