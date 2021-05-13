@@ -1,12 +1,13 @@
 import datetime
 import logging
-import random
+import queue
 import socket
 import threading
 from typing import Optional
 
-from . import commands, helpers, worker
+from . import commands, worker
 
+all_user_ids = queue.deque(range(1000, 10000))
 logger = logging.getLogger(__name__)
 job_manager: worker.JobManager = None
 
@@ -89,7 +90,7 @@ class ClientHandler:
 
 
 def get_next_username() -> str:
-    return "u" + str(random.randint(1000, 9999))
+    return "u" + str(all_user_ids.popleft())
 
 
 def start():
