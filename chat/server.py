@@ -86,10 +86,7 @@ class ClientHandler:
             self.handle_fib(params)
 
         if command == "url":
-            self.handle_url()
-
-    def handle_url(self):
-        pass
+            self.handle_url(params)
 
     def handle_whois(self):
         users = [h.username for h in registry.all() if h != self]
@@ -99,6 +96,27 @@ class ClientHandler:
             message = "No other user is connected."
 
         self.send(message)
+
+    def handle_url(self, params):
+        params_splitted = params.split(" ")
+        if len(params_splitted) != 2:
+            self.send("Invalid url paramenters.")
+
+        other_user, url = params_splitted
+        handler = registry.find(other_user)
+        if not handler:
+            self.send(f"User not found: {other_user}")
+            return
+
+        def callback(result, handler):
+            handler.send(f"resource_size({url}) = {result}")
+
+        job_manager.enqueue_job(
+            job_func=helpers.get_remote_resource_length,
+            job_func_kwargs={"url": url},
+            callback_func=callback,
+            callback_func_kwargs={"handler": handler},
+        )
 
     def handle_fib(self, params) -> None:
         params_splitted = params.split(" ")

@@ -1,3 +1,6 @@
+import urllib.request
+
+
 def fibonacci(n: int) -> int:
     """
     A naive fibonacci implementation to simulate CPU load.
@@ -9,3 +12,9 @@ def fibonacci(n: int) -> int:
         return 1
 
     return fibonacci(n - 1) + fibonacci(n - 2)
+
+
+def get_remote_resource_length(url: str) -> int:
+    with urllib.request.urlopen(url) as response:
+        data = response.read()
+        return len(data)
