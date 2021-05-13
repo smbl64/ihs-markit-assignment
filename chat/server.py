@@ -1,22 +1,40 @@
 import datetime
 import logging
-import os
 import random
 import socket
 import threading
-import time
 from typing import Optional
 
 from . import helpers, worker
 
 logger = logging.getLogger(__name__)
 job_manager: worker.JobManager = None
-list_of_handlers = []
 
 
-def wooot(name: str):
-    time.sleep(4)
-    return (f"{name} ---> 42")
+class HandlerRegistry:
+    def __init__(self):
+        self._handlers = []
+        self._lock = threading.Lock()
+
+    def register(self, handler):
+        with self._lock:
+            self._handlers.append(handler)
+
+    def unregister(self, handler):
+        with self._lock:
+            self._handlers.remove(handler)
+
+    def find(self, username: str) -> Optional["ClientHandler"]:
+        for handler in self._handlers:
+            if handler.username == username:
+                return handler
+        return None
+
+    def all(self):
+        return self._handlers
+
+
+registry = HandlerRegistry()
 
 
 class ClientHandler:
@@ -31,10 +49,10 @@ class ClientHandler:
         thread.start()
 
     def register_handler(self) -> None:
-        list_of_handlers.append(self)
+        registry.register(self)
 
     def unregister_handler(self) -> None:
-        list_of_handlers.remove(self)
+        registry.unregister(self)
 
     def _loop(self):
         self.send(f"Welcome! Your username is {self.username}")
@@ -70,27 +88,11 @@ class ClientHandler:
         if command == "url":
             self.handle_url()
 
-    def _find_handler(self, username: str) -> Optional["ClientHandler"]:
-        for handler in list_of_handlers:
-            if handler.username == username:
-                return handler
-        return None
-
     def handle_url(self):
-        def callback(result, target_handler):
-            print(">>>>>", result)
-            print("pid", os.getpid())
-            target_handler.send("Got " + str(result))
-
-        job_manager.enqueue_job(
-            job_func=wooot,
-            job_func_kwargs={"name": "Ali"},
-            callback_func=callback,
-            callback_func_kwargs={"target_handler": self},
-        )
+        pass
 
     def handle_whois(self):
-        users = [h.username for h in list_of_handlers if h != self]
+        users = [h.username for h in registry.all() if h != self]
         if users:
             message = "List of users: " + ", ".join(users)
         else:
@@ -104,7 +106,7 @@ class ClientHandler:
             self.send("Invalid fib paramenters.")
 
         other_user, number = params_splitted
-        handler = self._find_handler(other_user)
+        handler = registry.find(other_user)
         if not handler:
             self.send(f"User not found: {other_user}")
             return
@@ -123,14 +125,14 @@ class ClientHandler:
 
     def handle_msg(self, message: str) -> None:
         other_user, _, message = message.partition(" ")
-        handler = self._find_handler(other_user)
+        handler = registry.find(other_user)
         if not handler:
             self.send(f"User not found: {other_user}")
 
         handler.send(message, sender=self.username)
 
     def handle_broadcast(self, message: str) -> None:
-        for other_handler in list_of_handlers:
+        for other_handler in registry.all():
             if other_handler == self:
                 continue
 
