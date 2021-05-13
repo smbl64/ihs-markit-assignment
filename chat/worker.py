@@ -84,6 +84,21 @@ class JobManager:
     def enqueue_job(
         self, *, job_func, job_func_kwargs, callback_func, callback_func_kwargs
     ) -> None:
+        """
+        Enqueue a job to be run in the background.
+
+        :param job_func: The function to call for the job.
+        :param job_func_kwargs: An optional dictionary representing the kwargs for
+            the job function.
+        :param callback_func: The function to call when the job is finished.
+        :param callback_func_kwargs: An optional dictionary of kwargs to send to the
+            callback function.
+        """
+        if not job_func_kwargs:
+            job_func_kwargs = dict()
+        if not callback_func_kwargs:
+            callback_func_kwargs = dict()
+
         job_id = uuid.uuid4()
         job_description = {
             "id": job_id,

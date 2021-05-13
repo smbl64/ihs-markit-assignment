@@ -6,34 +6,64 @@ from . import helpers
 class CommandContext(ABC):
     @abstractmethod
     def get_message(self):
+        """
+        Get the supplying message that is received with the command.
+        """
         pass
 
     @abstractmethod
     def get_all_usernames(self):
+        """
+        List all online usernames.
+        """
         pass
 
     @abstractmethod
     def get_current_username(self):
+        """
+        Get current username.
+        """
         pass
 
     @abstractmethod
     def send_message(self, message: str) -> bool:
+        """
+        Send a message to the current user.
+        """
         pass
 
     @abstractmethod
     def send_message_to_other_user(
         self, receipient: str, message: str, *, sender: str = None
     ) -> bool:
+        """
+        Send a message to another user.
+
+        Optionally, the sender can also be specified.
+        """
         pass
 
     @abstractmethod
     def is_user_online(self, username: str) -> bool:
+        """
+        Check whether a specific user is online.
+        """
         pass
 
     @abstractmethod
     def run_in_background(
         self, *, job_func, job_func_kwargs, callback_func, callback_func_kwargs
     ) -> None:
+        """
+        Schedule a job to be run in the background.
+
+        :param job_func: The function to call for the job.
+        :param job_func_kwargs: An optional dictionary representing the kwargs for
+            the job function.
+        :param callback_func: The function to call when the job is finished.
+        :param callback_func_kwargs: An optional dictionary of kwargs to send to the
+            callback function.
+        """
         pass
 
 
