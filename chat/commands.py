@@ -4,6 +4,10 @@ from . import helpers
 
 
 class CommandContext(ABC):
+    """
+    A CommandContext provides the data and functionality for the commands
+    to do their job.
+    """
     @abstractmethod
     def get_message(self):
         """

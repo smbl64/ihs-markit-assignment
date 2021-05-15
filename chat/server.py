@@ -19,6 +19,10 @@ job_manager: worker.JobManager = None
 
 
 class ServerCommandContext(commands.CommandContext):
+    """
+    An implementation of the CommandContext class which connects the commands
+    to a real running server.
+    """
     def __init__(self, message, current_handler, handlers_registry, job_manager):
         self.message = message
         self.current_handler = current_handler
@@ -62,7 +66,7 @@ class ServerCommandContext(commands.CommandContext):
 
 class HandlerRegistry:
     """
-    A class which keeps track of online users and their handler classes.
+    HandlerRegistry keeps track of online users and their handler classes.
     """
 
     def __init__(self):
@@ -88,6 +92,12 @@ registry = HandlerRegistry()
 
 
 class ClientHandler:
+    """
+    The main class for handling the connection with a client.
+
+    It will wait for client commands and routes them to the other parts
+    of the application.
+    """
     def __init__(self, connection, username):
         self.connection = connection
         self.username = username
@@ -106,7 +116,6 @@ class ClientHandler:
             if len(data) == 0:
                 self.connection.close()
                 registry.unregister(self)
-                self.unregister_handler()
                 break
 
             self._handle_request(data)

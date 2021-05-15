@@ -5,6 +5,8 @@ import threading
 import uuid
 
 
+DEFAULT_WORKER_COUNT = 4
+
 class JobWorker:
     """
     Encapsulate a multiprocessing process.
@@ -41,8 +43,12 @@ class JobWorker:
 
 
 class JobManager:
-    def __init__(self, number_of_workers: int = 4):
-        self._logger = logging.getLogger("JobManager")
+    """
+    The main class for managing the job system and handling
+    the worker processes.
+    """
+    def __init__(self, number_of_workers: int = DEFAULT_WORKER_COUNT):
+        self._logger = logging.getLogger(self.__class__.__name__)
         self._job_queue = mp.Queue()
         self._result_queue = mp.Queue()
         self._job_id_to_callback_map = dict()
