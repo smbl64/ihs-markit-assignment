@@ -101,6 +101,7 @@ class ClientHandler:
     def __init__(self, connection, username):
         self.connection = connection
         self.username = username
+        self.logger = logging.getLogger("Handler " + self.username)
 
     def start(self):
         registry.register(self)
@@ -121,12 +122,15 @@ class ClientHandler:
             self._handle_request(data)
 
     def _handle_request(self, data: bytes) -> None:
-        data = data.decode("utf-8").strip()
-        command_name, _, message = data.partition(" ")
-        command_name = command_name.lower()
+        try:
+            data = data.decode("utf-8").strip()
+            command_name, _, message = data.partition(" ")
+            command_name = command_name.lower()
 
-        context = ServerCommandContext(message, self, registry, job_manager)
-        commands.handle_command(command_name, context)
+            context = ServerCommandContext(message, self, registry, job_manager)
+            commands.handle_command(command_name, context)
+        except Exception:
+            self.logger.exception("Failed to handle the command")
 
     def send(self, message: str, *, sender: str = None) -> bool:
         # Check to see if socket is already closed
