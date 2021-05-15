@@ -105,8 +105,8 @@ def test_url_command(monkeypatch):
 
 def test_fib_command():
     context = MockContext(
-        message="u2 5", current_username="u1", all_usernames=["u1", "u2"]
+        message="u2 6", current_username="u1", all_usernames=["u1", "u2"]
     )
     commands.fib_command(context)
     assert context.messages_sent["u1"] == ["Fib result is delivered to u2"]
-    assert context.messages_sent["u2"] == ["fib(5) = 5"]
+    assert context.messages_sent["u2"] == ["fib(6) = 8"]
