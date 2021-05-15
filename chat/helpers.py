@@ -15,6 +15,10 @@ def fibonacci(n: int) -> int:
 
 
 def get_remote_resource_length(url: str) -> int:
+    """
+    Download the resource specified by the given URL and
+    return its length in bytes.
+    """
     with urllib.request.urlopen(url) as response:
         data = response.read()
         return len(data)
