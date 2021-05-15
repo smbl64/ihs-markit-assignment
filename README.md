@@ -12,6 +12,8 @@ The chat server has no external dependency. Simply clone the repository and then
 python -m chat
 ```
 
+Server will run on `localhost:1235`.
+
 **Note:** If you are on macOS, set the following environment variable before running the server, otherwise the `url` command will not work.
 
 ```
@@ -70,9 +72,9 @@ When a client handler needs to run a command, it will invoke `commands.handle_co
 
 As with any other project, there is room for improvement. Below I have listed some areas that can be improved:
 
-1. There is no mechanism to prevent workers from crashing and also re-creating workers if they crash.
-2. Code quality can be improved by adding more type hints.
-3. Test cases only cover the "happy path" and there is no test case for edge cases right now.
+1. There is no mechanism to prevent the workers from crashing and also re-creating workers if they did crash.
+2. Code quality can be improved further by adding more type hints.
+3. Right now test cases only cover the "happy path" and there is no test case for edge cases (such as passing invalid parameters to a server command).
 4. Configurations (IP, port, number of workers etc) are hardcoded. They should be configurable via environment variables and/or a config file.
 5. Tests can be expanded using integration tests. It's possible to spawn a real server (on an actual port) and send real commands to it.
 6. Right now each new user gets a new thread. A better approach would be to have a thread-pool and limit the number of accepted connections.
